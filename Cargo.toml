@@ -1,6 +1,6 @@
 [package]
 name = "sms"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["EchoLi <Echo_AI@foxmail.com>"]
 edition = "2018"
 description = "SMS sdk all in one"
