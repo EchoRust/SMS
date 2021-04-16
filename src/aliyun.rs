@@ -9,6 +9,13 @@ pub struct Aliyun<'a> {
 }
 
 impl<'a> Aliyun<'a> {
+    /// 初始化密钥
+    /// ```rust,no_run
+    /// use sms::aliyun::Aliyun;
+    ///
+    /// let aliyun = Aliyun::new("xxxx", "xxxx");
+    ///
+    /// ```
     pub fn new(access_key_id: &'a str, access_secret: &'a str) -> Self {
         Self {
             access_key_id,
@@ -16,6 +23,21 @@ impl<'a> Aliyun<'a> {
         }
     }
 
+    /// send_sms
+    /// 发送短信
+    ///
+    /// ```rust,no_run
+    /// use sms::aliyun::Aliyun;
+    ///
+    /// let aliyun = Aliyun::new("xxxx", "xxxx");
+    ///
+    /// let resp = aliyun
+    ///     .send_sms("18888888888", "登录验证", "SMS_5003224", "1234")
+    ///     .await
+    ///     .unwrap();
+    ///
+    /// println!("{:?}", resp);
+    /// ```
     pub async fn send_sms(
         &self,
         phone_num: &'a str,
@@ -41,12 +63,6 @@ impl<'a> Aliyun<'a> {
         parameters.push(get_param_str("RegionId", "cn-hangzhou"));
         parameters.push(get_param_str("SignName", sign_name));
         parameters.push(get_param_str("TemplateCode", template_code));
-
-        // let mut rng = rand::thread_rng();
-        // let code = format!(
-        //     "{{\"code\":\"{}\",\"product\":\"幻果软件\"}}",
-        //     rng.gen_range(1000..=9999)
-        // );
         parameters.push(get_param_str("TemplateParam", template_param));
         parameters.push(get_param_str("PhoneNumbers", phone_num));
 
