@@ -93,9 +93,9 @@ impl<'a> Aliyun<'a> {
 
         parameters.push(get_param_str("Signature", signature.as_str()));
 
-        let url = parameters.join("&");
+        let url = format!("https://dysmsapi.aliyuncs.com/?{}", parameters.join("&"));
 
-        let resp = reqwest::get(format!("https://dysmsapi.aliyuncs.com/?{}", url).as_str())
+        let resp = reqwest::get(url.as_str())
             .await?
             .json::<HashMap<String, String>>()
             .await?;
