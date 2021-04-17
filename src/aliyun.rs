@@ -1,14 +1,23 @@
+//! # aliyun SMS
+//!
+//! **阿里云短信sdk**
+//!
+//! 目前实现了发送短信功能
+//!
+
 use chrono::Utc;
 use ring::hmac;
 use std::collections::HashMap;
 use uuid::Uuid;
 
+/// aliyun sms
 pub struct Aliyun<'a> {
     access_key_id: &'a str,
     access_secret: &'a str,
 }
 
 impl<'a> Aliyun<'a> {
+    /// init access key
     /// 初始化密钥
     /// ```rust,no_run
     /// use sms::aliyun::Aliyun;
