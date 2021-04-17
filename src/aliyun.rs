@@ -54,7 +54,9 @@ impl<'a> Aliyun<'a> {
         template_code: &'a str,
         template_param: &'a str,
     ) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
+        // Init parameters
         let mut parameters = Vec::new();
+        // Push data
         parameters.push(get_param_str("AccessKeyId", self.access_key_id));
         parameters.push(get_param_str("SignatureVersion", "1.0"));
         parameters.push(get_param_str("SignatureMethod", "HMAC-SHA1"));
@@ -74,27 +76,28 @@ impl<'a> Aliyun<'a> {
         parameters.push(get_param_str("TemplateCode", template_code));
         parameters.push(get_param_str("TemplateParam", template_param));
         parameters.push(get_param_str("PhoneNumbers", phone_num));
-
+        // Sort by dictionary
         parameters.sort();
 
-        let sort_query_string = parameters.join("&");
+        // Get the string waiting to be signed
+        let string_to_sign = format!("GET&%2F&{}", special_url_encode(parameters.join("&").as_str()));
 
-        let string_to_sign = format!("GET&%2F&{}", special_url_encode(sort_query_string.as_str()));
-
-        // 加密
+        // Get key by access_secret
         let key = hmac::Key::new(
             hmac::HMAC_SHA1_FOR_LEGACY_USE_ONLY,
             format!("{}&", self.access_secret).as_bytes(),
         );
+        // HmacSha1
         let sign = hmac::sign(&key, string_to_sign.as_bytes());
-
+        // Base64 encode
         let signature = base64::encode(sign.as_ref()).to_string();
-        // println!("Sign: {}", signature);
 
+        // Push Signature to parameters
         parameters.push(get_param_str("Signature", signature.as_str()));
 
+        // Get sendsms url
         let url = format!("https://dysmsapi.aliyuncs.com/?{}", parameters.join("&"));
-
+        // Sendsms
         let resp = reqwest::get(url.as_str())
             .await?
             .json::<HashMap<String, String>>()
