@@ -1,6 +1,6 @@
 [package]
 name = "sms"
-version = "0.1.3"
+version = "0.1.0"
 authors = ["EchoLi <Echo_AI@foxmail.com>"]
 edition = "2018"
 description = "Rust sms sdk"
