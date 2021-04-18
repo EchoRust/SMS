@@ -12,7 +12,7 @@ Rust发送短信SDK
 use sms::aliyun::Aliyun;
 
 let aliyun = Aliyun::new("accessKeyId", "accessSecret");
-let resp = aliyun.send_sms.await.unwarp();
+let resp = aliyun.send_sms("18888888888", "登录验证", "SMS_5003224", "验证码1234").await.unwarp();
 
 println("{:?}", resp);
 ```

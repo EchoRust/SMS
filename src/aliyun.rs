@@ -37,11 +37,17 @@ impl<'a> Aliyun<'a> {
     ///
     /// ```rust,no_run
     /// use sms::aliyun::Aliyun;
+    /// use rand::prelude::*;
     ///
     /// let aliyun = Aliyun::new("xxxx", "xxxx");
     ///
+    /// let mut rng = rand::thread_rng();
+    /// let code = format!(
+    ///     "{{\"code\":\"{}\",\"product\":\"EchoLi\"}}",
+    ///     rng.gen_range(1000..=9999)
+    /// );
     /// let resp = aliyun
-    ///     .send_sms("18888888888", "登录验证", "SMS_5003224", "1234")
+    ///     .send_sms("18888888888", "登录验证", "SMS_5003224", code.as_str())
     ///     .await
     ///     .unwrap();
     ///
@@ -90,7 +96,7 @@ impl<'a> Aliyun<'a> {
         // HmacSha1
         let sign = hmac::sign(&key, string_to_sign.as_bytes());
         // Base64 encode
-        let signature = base64::encode(sign.as_ref()).to_string();
+        let signature = base64::encode(sign.as_ref());
 
         // Push Signature to parameters
         parameters.push(get_param_str("Signature", signature.as_str()));
