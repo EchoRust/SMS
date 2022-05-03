@@ -14,8 +14,8 @@ keywords = ["sms", "aliyun"]
 base64 = "0.13"
 chrono = "0.4"
 rand = "0.8"
-ring = "0.16"
 reqwest = { version = "0.11", features = ["json"] }
+ring = "0.16"
 urlencoding = "2.1.0"
 
 [dev-dependencies]

@@ -115,8 +115,8 @@ impl<'a> Aliyun<'a> {
     fn canonicalize_query_string(&self, params: &HashMap<&str, &'a str>) -> String {
         let now = Utc::now();
 
-        let signature_method = format!("{}", &now.timestamp_nanos());
-        let timestamp = format!("{}", &now.to_rfc3339_opts(SecondsFormat::Secs, true));
+        let signature_method = now.timestamp_nanos().to_string();
+        let timestamp = now.to_rfc3339_opts(SecondsFormat::Secs, true);
 
         let mut all_params = HashMap::new();
 
