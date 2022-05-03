@@ -115,7 +115,7 @@ impl<'a> Aliyun<'a> {
     fn canonicalize_query_string(&self, params: &HashMap<&str, &'a str>) -> String {
         let now = Utc::now();
 
-        let signature_method = now.timestamp_nanos().to_string();
+        let signature_nonce = now.timestamp_nanos().to_string();
         let timestamp = now.to_rfc3339_opts(SecondsFormat::Secs, true);
 
         let mut all_params = HashMap::new();
@@ -123,7 +123,7 @@ impl<'a> Aliyun<'a> {
         all_params.insert("AccessKeyId", self.access_key_id);
         all_params.insert("Format", FORMAT);
         all_params.insert("SignatureMethod", SIGNATURE_METHOD);
-        all_params.insert("SignatureNonce", signature_method.as_str());
+        all_params.insert("SignatureNonce", signature_nonce.as_str());
         all_params.insert("SignatureVersion", SIGNATURE_VERSION);
         all_params.insert("Timestamp", timestamp.as_str());
 
