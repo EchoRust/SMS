@@ -5,10 +5,23 @@
 //! 目前实现了发送短信功能
 //!
 
-use chrono::Utc;
+use chrono::{SecondsFormat, Utc};
 use ring::hmac;
 use std::collections::HashMap;
-use uuid::Uuid;
+
+/// SMS API 版本
+const SMS_VERSION: &'static str = "2017-05-25";
+
+/// 签名算法版本。目前为固定值 `1.0`。
+const SIGNATURE_VERSION: &'static str = "1.0";
+
+/// 签名方式。目前为固定值 `HMAC-SHA1`。
+const SIGNATURE_METHOD: &'static str = "HMAC-SHA1";
+
+/// 指定接口返回数据的格式。可以选择 `JSON` 或者 `XML`。默认为 `XML`。
+///
+/// 这里选择 `JSON`。
+const FORMAT: &'static str = "json";
 
 /// aliyun sms
 pub struct Aliyun<'a> {
@@ -43,11 +56,12 @@ impl<'a> Aliyun<'a> {
     ///
     /// let mut rng = rand::thread_rng();
     /// let code = format!(
-    ///     "{{\"code\":\"{}\",\"product\":\"EchoLi\"}}",
+    ///     r#"{{"code":"{}","product":"EchoLi"}}"#,
     ///     rng.gen_range(1000..=9999)
     /// );
+    ///
     /// let resp = aliyun
-    ///     .send_sms("18888888888", "登录验证", "SMS_5003224", code.as_str())
+    ///     .send_sms("18888888888", "登录验证", "SMS_123456", code.as_str())
     ///     .await
     ///     .unwrap();
     ///
@@ -55,73 +69,87 @@ impl<'a> Aliyun<'a> {
     /// ```
     pub async fn send_sms(
         &self,
-        phone_num: &'a str,
+        phone_numbers: &'a str,
         sign_name: &'a str,
         template_code: &'a str,
         template_param: &'a str,
     ) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
-        // Init parameters
-        let mut parameters = Vec::new();
-        // Push data
-        parameters.push(get_param_str("AccessKeyId", self.access_key_id));
-        parameters.push(get_param_str("SignatureVersion", "1.0"));
-        parameters.push(get_param_str("SignatureMethod", "HMAC-SHA1"));
-        parameters.push(get_param_str(
-            "SignatureNonce",
-            Uuid::new_v4().to_string().as_str(),
-        ));
-        parameters.push(get_param_str(
-            "Timestamp",
-            Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string().as_str(),
-        ));
-        parameters.push(get_param_str("Format", "json"));
-        parameters.push(get_param_str("Action", "SendSms"));
-        parameters.push(get_param_str("Version", "2017-05-25"));
-        parameters.push(get_param_str("RegionId", "cn-hangzhou"));
-        parameters.push(get_param_str("SignName", sign_name));
-        parameters.push(get_param_str("TemplateCode", template_code));
-        parameters.push(get_param_str("TemplateParam", template_param));
-        parameters.push(get_param_str("PhoneNumbers", phone_num));
-        // Sort by dictionary
-        parameters.sort();
+        let mut params = HashMap::new();
 
-        // Get the string waiting to be signed
-        let string_to_sign = format!("GET&%2F&{}", special_url_encode(parameters.join("&").as_str()));
+        params.insert("PhoneNumbers", phone_numbers);
+        params.insert("SignName", sign_name);
+        params.insert("TemplateCode", template_code);
+        params.insert("RegionId", "cn-hangzhou");
+        params.insert("TemplateParam", template_param);
+        params.insert("Action", "SendSms");
+        params.insert("Version", SMS_VERSION);
 
-        // Get key by access_secret
-        let key = hmac::Key::new(
-            hmac::HMAC_SHA1_FOR_LEGACY_USE_ONLY,
-            format!("{}&", self.access_secret).as_bytes(),
+        // 构造规范化请求字符串
+        let canonicalize_query_string = self.canonicalize_query_string(&params);
+
+        // 构造签名字符串
+        let signature = self.signature(
+            format!(
+                "GET&%2F&{}",
+                urlencoding::encode(&canonicalize_query_string)
+            )
+                .as_bytes(),
         );
-        // HmacSha1
-        let sign = hmac::sign(&key, string_to_sign.as_bytes());
-        // Base64 encode
-        let signature = base64::encode(sign.as_ref());
 
-        // Push Signature to parameters
-        parameters.push(get_param_str("Signature", signature.as_str()));
+        let url = format!(
+            "https://dysmsapi.aliyuncs.com/?{}&Signature={}",
+            canonicalize_query_string, signature
+        );
 
-        // Get sendsms url
-        let url = format!("https://dysmsapi.aliyuncs.com/?{}", parameters.join("&"));
-        // Sendsms
-        let resp = reqwest::get(url.as_str())
+        let resp = reqwest::get(url)
             .await?
             .json::<HashMap<String, String>>()
             .await?;
 
         Ok(resp)
     }
-}
 
-fn get_param_str(key: &str, value: &str) -> String {
-    format!("{}={}", special_url_encode(key), special_url_encode(value))
-}
+    /// 构造规范化请求字符串
+    ///
+    /// 详见链接: https://help.aliyun.com/document_detail/315526.html#sectiondiv-y9b-x9s-wvp
+    fn canonicalize_query_string(&self, params: &HashMap<&str, &'a str>) -> String {
+        let now = Utc::now();
 
-fn special_url_encode(value: &str) -> String {
-    form_urlencoded::Serializer::new(String::new())
-        .append_key_only(value)
-        .finish()
-        .replace("+", "%20")
-        .replace("*", "%2A")
-        .replace("%7E", "~")
+        let signature_method = format!("{}", &now.timestamp_nanos());
+        let timestamp = format!("{}", &now.to_rfc3339_opts(SecondsFormat::Secs, true));
+
+        let mut all_params = HashMap::new();
+
+        all_params.insert("AccessKeyId", self.access_key_id);
+        all_params.insert("Format", FORMAT);
+        all_params.insert("SignatureMethod", SIGNATURE_METHOD);
+        all_params.insert("SignatureNonce", signature_method.as_str());
+        all_params.insert("SignatureVersion", SIGNATURE_VERSION);
+        all_params.insert("Timestamp", timestamp.as_str());
+
+        params.iter().for_each(|(&k, &v)| {
+            all_params.insert(k, v);
+        });
+
+        let mut vec_arams: Vec<String> = all_params
+            .iter()
+            .map(|(&k, &v)| format!("{}={}", k, urlencoding::encode(&v)))
+            .collect();
+
+        vec_arams.sort();
+
+        vec_arams.join("&")
+    }
+
+    /// 构建签名字符串
+    fn signature(&self, string_to_sign: &[u8]) -> String {
+        let key = hmac::Key::new(
+            hmac::HMAC_SHA1_FOR_LEGACY_USE_ONLY,
+            format!("{}&", self.access_secret).as_bytes(),
+        );
+
+        let sign = hmac::sign(&key, string_to_sign);
+
+        base64::encode(sign.as_ref())
+    }
 }

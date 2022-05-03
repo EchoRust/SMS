@@ -7,12 +7,12 @@ async fn send_sms() {
 
     let mut rng = rand::thread_rng();
     let code = format!(
-        "{{\"code\":\"{}\",\"product\":\"EchoLi\"}}",
+        r#"{{"code":"{}","product":"EchoLi"}}"#,
         rng.gen_range(1000..=9999)
     );
 
     let resp = aliyun
-        .send_sms("18888888888", "登录验证", "SMS_5003224", code.as_str())
+        .send_sms("18888888888", "登录验证", "SMS_123456", code.as_str())
         .await
         .unwrap();
 
