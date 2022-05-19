@@ -32,6 +32,7 @@ pub struct Aliyun<'a> {
 impl<'a> Aliyun<'a> {
     /// init access key
     /// 初始化密钥
+    ///
     /// ```rust,no_run
     /// use sms::aliyun::Aliyun;
     ///
@@ -91,8 +92,7 @@ impl<'a> Aliyun<'a> {
         let signature = self.signature(
             format!(
                 "GET&%2F&{}",
-                urlencoding::encode(&canonicalize_query_string)
-            )
+                urlencoding::encode(&canonicalize_query_string))
                 .as_bytes(),
         );
 
@@ -133,7 +133,7 @@ impl<'a> Aliyun<'a> {
 
         let mut vec_arams: Vec<String> = all_params
             .iter()
-            .map(|(&k, &v)| format!("{}={}", k, urlencoding::encode(&v)))
+            .map(|(&k, &v)| format!("{}={}", k, urlencoding::encode(v)))
             .collect();
 
         vec_arams.sort();
