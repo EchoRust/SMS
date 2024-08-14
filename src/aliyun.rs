@@ -10,18 +10,18 @@ use ring::hmac;
 use std::collections::HashMap;
 
 /// SMS API 版本
-const SMS_VERSION: &'static str = "2017-05-25";
+const SMS_VERSION: &str = "2017-05-25";
 
 /// 签名算法版本。目前为固定值 `1.0`。
-const SIGNATURE_VERSION: &'static str = "1.0";
+const SIGNATURE_VERSION: &str = "1.0";
 
 /// 签名方式。目前为固定值 `HMAC-SHA1`。
-const SIGNATURE_METHOD: &'static str = "HMAC-SHA1";
+const SIGNATURE_METHOD: &str = "HMAC-SHA1";
 
 /// 指定接口返回数据的格式。可以选择 `JSON` 或者 `XML`。默认为 `XML`。
 ///
 /// 这里选择 `JSON`。
-const FORMAT: &'static str = "json";
+const FORMAT: &str = "json";
 
 /// aliyun sms
 pub struct Aliyun<'a> {
@@ -92,8 +92,9 @@ impl<'a> Aliyun<'a> {
         let signature = self.signature(
             format!(
                 "GET&%2F&{}",
-                urlencoding::encode(&canonicalize_query_string))
-                .as_bytes(),
+                urlencoding::encode(&canonicalize_query_string)
+            )
+            .as_bytes(),
         );
 
         let url = format!(
@@ -115,7 +116,7 @@ impl<'a> Aliyun<'a> {
     fn canonicalize_query_string(&self, params: &HashMap<&str, &'a str>) -> String {
         let now = Utc::now();
 
-        let signature_nonce = now.timestamp_nanos().to_string();
+        let signature_nonce = now.timestamp_micros().to_string();
         let timestamp = now.to_rfc3339_opts(SecondsFormat::Secs, true);
 
         let mut all_params = HashMap::new();
